@@ -8,14 +8,14 @@
         /* Basic styling for the container and elements */
         body {
             font-family: Helvetica, Arial, sans-serif;
-            margin: 0; /* Remove default body margin */
+            margin: 0;
             padding: 20px;
             background-color: #f4f4f4;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Use 100vh for full viewport height */
-            box-sizing: border-box; /* Include padding in element's total width/height */
+            min-height: 100vh;
+            box-sizing: border-box;
         }
         .container {
             background-color: #fff;
@@ -23,7 +23,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 400px; /* Max width for the container */
+            max-width: 400px;
             text-align: center;
             box-sizing: border-box;
         }
@@ -65,7 +65,7 @@
             font-size: 18px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-top: 15px; /* Added margin for separation */
+            margin-top: 15px;
         }
         button:hover {
             background-color: #0056b3;
@@ -79,7 +79,7 @@
             padding: 10px;
             border-radius: 5px;
             text-align: center;
-            display: none; /* Hidden by default */
+            display: none;
             font-size: 14px;
         }
         #message.success {
@@ -109,18 +109,15 @@
 
     <script>
         // *** 1. YOUR MAKE.COM WEBHOOK TO GET SPONSORS ***
-        // This URL is now pre-filled with your provided webhook.
         const getSponsorsWebhookUrl = 'https://hook.us1.make.com/npg2gh8os5tsqbyi9x3x3vt1yv66u66i';
         
         // *** 2. YOUR GOHIGHLEVEL FORM'S PUBLIC URL ***
-        // This URL is now pre-filled with your provided form URL.
         const highLevelFormUrl = 'https://secure.wings4water.org/widget/form/22kWw3bkTr9tLWDLYzi8'; 
 
         const sponsorSelect = document.getElementById('sponsorSelect');
         const proceedButton = document.getElementById('proceedButton');
         const messageDiv = document.getElementById('message');
 
-        // Function to display messages to the user
         function showMessage(msg, type) {
             messageDiv.textContent = msg;
             messageDiv.className = ''; 
@@ -131,7 +128,6 @@
             }, 5000); 
         }
 
-        // Enable/disable button based on selection in dropdown
         sponsorSelect.addEventListener('change', function() {
             if (sponsorSelect.value) {
                 proceedButton.disabled = false;
@@ -140,7 +136,6 @@
             }
         });
 
-        // --- Fetch Sponsors to populate the dropdown ---
         fetch(getSponsorsWebhookUrl)
             .then(response => {
                 if (!response.ok) {
@@ -149,7 +144,7 @@
                 return response.json(); 
             })
             .then(data => {
-                console.log('Sponsors data received:', data);
+                console.log('Sponsors data received from webhook:', data); // Log the raw data received
                 
                 if (Array.isArray(data) && data.length > 0) {
                     sponsorSelect.innerHTML = '<option value="">-- Select a Sponsor --</option>';
@@ -157,11 +152,14 @@
                     data.forEach(sponsor => {
                         const option = document.createElement('option');
                         option.value = sponsor.id; 
+                        
+                        // Use companyName first, then name for display
                         option.textContent = sponsor.companyName || sponsor.name || 'Unknown Sponsor';
                         
-                        // Store email in a data attribute for later retrieval
+                        // Store both companyName and email as data attributes for precise retrieval
+                        option.dataset.companyName = sponsor.companyName || sponsor.name || ''; // Store actual name data
                         option.dataset.email = sponsor.email || ''; 
-
+                        
                         sponsorSelect.appendChild(option);
                     });
                     showMessage('Sponsors loaded successfully.', 'success');
@@ -174,15 +172,13 @@
                 console.error('Error fetching sponsors:', error);
                 sponsorSelect.innerHTML = '<option value="">Error loading sponsors</option>';
                 showMessage(`Failed to load sponsors. Error: ${error.message}. Check console for details.`, 'error');
-                proceedButton.disabled = true; // Disable button on error
+                proceedButton.disabled = true;
             });
 
-        // --- Handle "Proceed to Form" Button Click ---
         proceedButton.addEventListener('click', function() {
             const selectedSponsorId = sponsorSelect.value;
-            const selectedSponsorName = sponsorSelect.options[sponsorSelect.selectedIndex].textContent;
-            
-            // Get the email from the selected option's data attribute
+            // Retrieve name and email directly from the data attributes
+            const selectedSponsorName = sponsorSelect.options[sponsorSelect.selectedIndex].dataset.companyName; 
             const selectedSponsorEmail = sponsorSelect.options[sponsorSelect.selectedIndex].dataset.email; 
 
             if (!selectedSponsorId) {
@@ -191,19 +187,25 @@
             }
 
             if (!highLevelFormUrl || highLevelFormUrl === 'YOUR_HIGHLEVEL_FORM_PUBLIC_URL_HERE') {
-                showMessage('Error: GoHighLevel Form URL not configured. Please set highLevelFormUrl in the code.', 'error');
-                console.error('GoHighLevel Form URL is not set. Please update the `highLevelFormUrl` variable.');
+                showMessage('Error: GoHighLevel Form URL not configured.', 'error');
+                console.error('GoHighLevel Form URL is not set.');
                 return;
             }
 
-            // Construct the URL for your GoHighLevel form, adding all parameters
             const redirectUrl = new URL(highLevelFormUrl);
-            // Use snake_case for URL parameters to match GoHighLevel's auto-generated custom field keys
             redirectUrl.searchParams.set('sponsor_id', selectedSponsorId); 
             redirectUrl.searchParams.set('sponsor_name', selectedSponsorName); 
             redirectUrl.searchParams.set('sponsor_email', selectedSponsorEmail); 
 
-            console.log('Redirecting to:', redirectUrl.toString());
+            // *** IMPORTANT: Check your browser's console after clicking "Proceed to Form" ***
+            // These logs will show you exactly what values are being passed in the URL.
+            console.log('--- Attempting to redirect with parameters ---');
+            console.log('sponsor_id:', selectedSponsorId);
+            console.log('sponsor_name:', selectedSponsorName);
+            console.log('sponsor_email:', selectedSponsorEmail);
+            console.log('Full Redirect URL:', redirectUrl.toString());
+            console.log('-------------------------------------------');
+
             window.top.location.href = redirectUrl.toString(); 
         });
 
